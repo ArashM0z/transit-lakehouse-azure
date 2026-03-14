@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pbix binary
+*.parquet binary
+*.duckdb binary
+*.tar.gz binary
+*.zip binary
+
+# Linguist hints — don't count generated artefacts toward language stats
+dbt/target/** linguist-generated=true
+docs/api/** linguist-generated=true
