@@ -1,0 +1,25 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  comments-indentation:
+    level: warning
+  document-start: disable
+  truthy:
+    allowed-values: ["true", "false", "on", "off"]
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+
+ignore: |
+  .terraform/
+  dbt/target/
+  dbt/dbt_packages/
+  helm/*/charts/
