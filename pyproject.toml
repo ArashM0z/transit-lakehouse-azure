@@ -1,0 +1,192 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "transit-lakehouse"
+version = "0.1.0"
+description = "Production Azure Databricks lakehouse for transit ridership analytics"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Arash Mozhdehi", email = "ArashM0z@users.noreply.github.com" }]
+keywords = ["transit", "lakehouse", "databricks", "delta-lake", "dbt", "power-bi", "spatial-analytics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "azure-storage-blob>=12.19",
+    "azure-identity>=1.16",
+    "azure-eventhub>=5.12",
+    "azure-keyvault-secrets>=4.8",
+    "confluent-kafka>=2.5",
+    "delta-spark>=3.2",
+    "pyspark>=3.5",
+    "duckdb>=1.0",
+    "pandas>=2.2",
+    "polars>=0.20",
+    "pyarrow>=16",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.25",
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp>=1.25",
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "great-expectations>=0.18",
+    "mlflow>=2.13",
+    "tenacity>=8.3",
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.14",
+    "pytest-xdist>=3.6",
+    "sqlfluff>=3.0",
+    "pre-commit>=3.7",
+    "hypothesis>=6.100",
+    "freezegun>=1.5",
+    "respx>=0.21",
+    "dbt-core>=1.8",
+    "dbt-databricks>=1.8",
+    "dbt-duckdb>=1.8",
+]
+
+[project.scripts]
+afc-tap-generator = "src.ingestion.afc_tap_generator:main"
+bronze-ingest = "src.ingestion.bronze_ingest:main"
+seed-reference-data = "src.ingestion.seed_reference_data:main"
+scoring-api = "src.api.main:run"
+
+[project.urls]
+Homepage = "https://github.com/ArashM0z/transit-lakehouse-azure"
+Issues = "https://github.com/ArashM0z/transit-lakehouse-azure/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+# ---------------------- ruff ----------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["notebooks", "dbt/target", "terraform"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "UP",   # pyupgrade
+    "SIM",  # simplify
+    "RUF",  # ruff-specific
+    "TID",  # tidy-imports
+    "PT",   # pytest-style
+    "RET",  # return
+    "PL",   # pylint
+    "S",    # bandit
+]
+ignore = ["S101", "PLR0913"]  # asserts ok in tests; argument-count rule is intentionally relaxed
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004", "S105"]
+"scripts/**" = ["T201"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------------------- mypy ----------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true  # no implicit Any anywhere
+warn_unreachable = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+no_implicit_reexport = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["pyspark.*", "delta.*", "confluent_kafka.*", "great_expectations.*"]
+ignore_missing_imports = true
+
+# ---------------------- pytest ----------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-fail-under=70",
+]
+markers = [
+    "unit: fast unit tests with no external deps",
+    "integration: requires docker-compose stack",
+    "data_quality: great-expectations validation",
+    "slow: tests that take >5 seconds",
+]
+asyncio_mode = "auto"
+
+# ---------------------- sqlfluff ----------------------
+[tool.sqlfluff.core]
+dialect = "databricks"
+templater = "dbt"
+exclude_rules = "L016,L034"
+max_line_length = 120
+
+[tool.sqlfluff.indentation]
+indented_joins = false
+indented_using_on = true
+template_blocks_indent = false
+
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = "upper"
+
+[tool.sqlfluff.rules.capitalisation.identifiers]
+extended_capitalisation_policy = "lower"
+
+[tool.sqlfluff.templater.dbt]
+project_dir = "dbt/"
+profiles_dir = "dbt/profiles/"
+
+# ---------------------- coverage ----------------------
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
+# ruff and mypy are the source of truth for code style
+
+# end of pyproject
+
+# end of mypy section
