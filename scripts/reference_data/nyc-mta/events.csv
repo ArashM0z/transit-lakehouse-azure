@@ -1,0 +1,10 @@
+event_id,name,venue_name,venue_latitude,venue_longitude,start_iso,end_iso,expected_attendance
+nye-times-sq-2025-26,New Year's Eve Times Square,Times Square,40.7580,-73.9855,2025-12-31T19:00:00+00:00,2026-01-01T05:00:00+00:00,1000000
+yankees-home-2026-04-10,Yankees Home Opener,Yankee Stadium,40.8296,-73.9262,2026-04-10T16:00:00+00:00,2026-04-10T23:00:00+00:00,46000
+mets-home-2026-04-11,Mets vs Phillies,Citi Field,40.7571,-73.8458,2026-04-11T17:00:00+00:00,2026-04-11T23:00:00+00:00,42000
+us-open-night-2026-09-04,US Open Night Session,USTA Billie Jean King NTC,40.7497,-73.8453,2026-09-04T19:00:00+00:00,2026-09-05T01:00:00+00:00,23000
+knicks-game7-2026-05-02,Knicks Conference Finals Game 7,Madison Square Garden,40.7505,-73.9934,2026-05-02T20:00:00+00:00,2026-05-02T23:30:00+00:00,19000
+brooklyn-half-2026-05-16,Brooklyn Half Marathon,Brooklyn-Coney Island,40.5775,-73.9810,2026-05-16T07:00:00+00:00,2026-05-16T13:00:00+00:00,30000
+fifa-2026-jul-04,FIFA World Cup 2026 Final,MetLife Stadium,40.8135,-74.0746,2026-07-19T20:00:00+00:00,2026-07-19T23:30:00+00:00,82500
+pride-march-2026-06-28,NYC Pride March,Fifth Avenue,40.7390,-74.0019,2026-06-28T12:00:00+00:00,2026-06-28T21:00:00+00:00,2000000
+macys-thanksgiving-2026-11-26,Macy's Thanksgiving Parade,Central Park West,40.7790,-73.9750,2026-11-26T09:00:00+00:00,2026-11-26T14:00:00+00:00,3500000
