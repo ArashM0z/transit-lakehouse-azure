@@ -1,0 +1,8 @@
+event_id,name,venue_name,venue_latitude,venue_longitude,start_iso,end_iso,expected_attendance
+stampede-2026,Calgary Stampede Opening Parade,Stampede Park / Downtown,51.0392,-114.0529,2026-07-03T09:00:00+00:00,2026-07-03T15:00:00+00:00,300000
+flames-playoff-g7,Flames Round 2 Game 7,Scotiabank Saddledome,51.0375,-114.0519,2026-04-30T19:30:00+00:00,2026-04-30T23:30:00+00:00,19000
+country-music-2026,Country Music Festival,Stampede Park,51.0392,-114.0529,2026-08-08T14:00:00+00:00,2026-08-09T01:00:00+00:00,40000
+folk-fest-2026,Calgary Folk Music Festival,Prince's Island Park,51.0535,-114.0686,2026-07-23T17:00:00+00:00,2026-07-26T23:00:00+00:00,15000
+marathon-2026,Calgary Marathon,Stampede Park,51.0383,-114.0530,2026-05-31T06:00:00+00:00,2026-05-31T14:00:00+00:00,15000
+fringe-2026,Calgary Fringe Festival,Inglewood,51.0421,-114.0432,2026-08-07T18:00:00+00:00,2026-08-15T23:00:00+00:00,30000
+beakerhead-2026,Beakerhead,Olympic Plaza,51.0468,-114.0593,2026-09-16T16:00:00+00:00,2026-09-20T23:00:00+00:00,150000
