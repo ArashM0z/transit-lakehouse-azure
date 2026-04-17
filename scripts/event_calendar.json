@@ -1,0 +1,37 @@
+[
+  {
+    "name": "FIFA World Cup 2026 — Toronto match #1 (CAN v BIH)",
+    "start": "2026-06-12T20:00:00",
+    "end": "2026-06-13T01:00:00",
+    "station_ids": ["UNION", "EXHIBITION"],
+    "uplift_multiplier": 4.5
+  },
+  {
+    "name": "FIFA World Cup 2026 — Toronto match #2",
+    "start": "2026-06-15T20:00:00",
+    "end": "2026-06-16T01:00:00",
+    "station_ids": ["UNION", "EXHIBITION"],
+    "uplift_multiplier": 4.2
+  },
+  {
+    "name": "FIFA World Cup 2026 — Toronto match #3",
+    "start": "2026-06-21T19:00:00",
+    "end": "2026-06-22T00:00:00",
+    "station_ids": ["UNION", "EXHIBITION"],
+    "uplift_multiplier": 4.0
+  },
+  {
+    "name": "Toronto Blue Jays — playoff home game",
+    "start": "2026-10-08T19:30:00",
+    "end": "2026-10-09T00:30:00",
+    "station_ids": ["UNION"],
+    "uplift_multiplier": 2.8
+  },
+  {
+    "name": "Taylor Swift Eras Tour — Toronto",
+    "start": "2026-11-14T18:00:00",
+    "end": "2026-11-15T01:30:00",
+    "station_ids": ["UNION"],
+    "uplift_multiplier": 3.5
+  }
+]
