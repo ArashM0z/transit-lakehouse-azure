@@ -1,0 +1,46 @@
+name: transit_lakehouse
+version: 0.1.0
+config-version: 2
+
+profile: transit_lakehouse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+require-dbt-version: [">=1.8.0", "<2.0.0"]
+
+models:
+  transit_lakehouse:
+    +persist_docs:
+      relation: true
+      columns: true
+    bronze:
+      +materialized: view
+      +schema: bronze
+    silver:
+      +materialized: incremental
+      +on_schema_change: append_new_columns
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: gold
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  transit_lakehouse:
+    +schema: seeds
+    +quote_columns: false
+
+vars:
+  start_date: "2024-01-01"
+  end_date: "2028-12-31"
+  event_uplift_floor_multiplier: 1.15
