@@ -1,0 +1,79 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: |
+      Raw, immutable bronze zone landed from the streaming and seed pipelines.
+      No transformations beyond schema inference.
+    schema: bronze
+    tags: ["bronze"]
+    tables:
+      - name: afc_taps
+        description: Fare-tap events from the AFC system. One row per tap.
+        loaded_at_field: ingest_timestamp_utc
+        freshness:
+          warn_after: { count: 10, period: minute }
+          error_after: { count: 30, period: minute }
+        columns:
+          - name: tap_id
+            description: Globally unique tap identifier.
+            tests:
+              - not_null
+              - unique
+          - name: card_token
+            description: Tokenised PRESTO card identifier; no PII.
+            tests: [not_null]
+          - name: station_id
+            description: Source station.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('bronze', 'stations')
+                  field: station_id
+          - name: line
+            description: Operating line at tap time.
+          - name: zone
+            description: Fare zone number.
+          - name: fare_class
+            description: Rider fare class.
+            tests:
+              - accepted_values:
+                  values: ["ADULT", "SENIOR", "YOUTH", "CHILD", "CONCESSION"]
+          - name: fare_amount_cad
+          - name: tap_type
+            tests:
+              - accepted_values:
+                  values: ["TAP_ON", "TAP_OFF"]
+          - name: tap_timestamp_utc
+            tests: [not_null]
+          - name: device_id
+          - name: schema_version
+          - name: ingest_timestamp_utc
+
+      - name: stations
+        description: Station reference dimension.
+        columns:
+          - name: station_id
+            tests: [not_null, unique]
+          - name: name
+          - name: line_id
+          - name: zone
+          - name: lat
+          - name: lon
+
+      - name: lines
+        description: Line reference dimension.
+        columns:
+          - name: line_id
+            tests: [not_null, unique]
+          - name: line_name
+          - name: mode
+          - name: is_express
+
+      - name: date
+        description: Calendar date dimension.
+        columns:
+          - name: date_key
+            tests: [not_null, unique]
+          - name: calendar_date
+            tests: [not_null]
