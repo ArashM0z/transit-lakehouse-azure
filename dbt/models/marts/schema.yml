@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: mart_event_demand_uplift
+    description: |
+      Event uplift mart. For every (station × hour) on an event day, compares
+      ridership to the per-station × day-of-week × hour baseline. Drives the
+      FIFA/event-day Power BI page and feeds the demand-forecasting model.
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_station')
+              field: station_id
+      - name: tap_hour_utc
+        tests: [not_null]
+      - name: uplift_multiplier
+        description: (ridership - baseline) / baseline. NULL when baseline is zero.
+      - name: uplift_z_score
+        description: Standardised uplift against the rolling baseline.
