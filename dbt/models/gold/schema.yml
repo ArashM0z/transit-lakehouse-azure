@@ -1,0 +1,74 @@
+version: 2
+
+models:
+
+  - name: fact_ridership_hourly
+    description: |
+      Hourly station-level ridership fact. Grain: (station_id, tap_hour_utc).
+    columns:
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+      - name: tap_hour_utc
+        description: Hour bucket truncated to the hour boundary, UTC.
+        tests: [not_null]
+      - name: station_id
+        description: Foreign key to dim_station.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_station')
+              field: station_id
+      - name: line_id
+        tests: [not_null]
+      - name: tap_on_count
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: total_taps
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+      - name: total_fare_cad
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+
+  - name: fact_fare_revenue
+    description: |
+      Fare revenue at station × hour × fare_class grain.
+    columns:
+      - name: station_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_station')
+              field: station_id
+      - name: fare_class
+        tests:
+          - accepted_values:
+              values: ["ADULT", "SENIOR", "YOUTH", "CHILD", "CONCESSION"]
+      - name: gross_fare_revenue_cad
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+
+  - name: dim_station
+    description: Station dimension with line metadata and centroid distance.
+    columns:
+      - name: station_id
+        tests: [not_null, unique]
+      - name: line_id
+        tests: [not_null]
+
+  - name: dim_date
+    description: Calendar date dimension.
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
+      - name: calendar_date
+        tests: [not_null]
