@@ -1,0 +1,52 @@
+# Databricks Asset Bundle definition for the transit-lakehouse workspace.
+# Deploys notebooks, jobs, and DLT pipelines declaratively. Promoted from
+# dev → prod by changing the --target.
+bundle:
+  name: transit-lakehouse
+
+include:
+  - resources/*.yml
+
+artifacts:
+  default:
+    type: whl
+    build: uv build --wheel
+    path: ..
+
+variables:
+  catalog:
+    description: Unity Catalog catalog name
+    default: transit_lakehouse
+  bronze_schema:
+    default: bronze
+  silver_schema:
+    default: silver
+  gold_schema:
+    default: gold
+  storage_account:
+    description: ADLS Gen2 account hosting the lakehouse
+  cluster_policy_id:
+    description: Cost-capped cluster policy
+
+workspace:
+  host: ${DATABRICKS_HOST}
+
+targets:
+
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: transit_lakehouse_dev
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.target}/${bundle.name}
+
+  prod:
+    mode: production
+    variables:
+      catalog: transit_lakehouse
+    run_as:
+      service_principal_name: ${DATABRICKS_PROD_SP}
+    permissions:
+      - level: CAN_VIEW
+        group_name: data-platform

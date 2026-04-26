@@ -1,0 +1,55 @@
+resources:
+  jobs:
+    bronze_ingest:
+      name: bronze_ingest
+      tags:
+        cost_center: portfolio
+        zone: bronze
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 2
+            policy_id: ${var.cluster_policy_id}
+            data_security_mode: USER_ISOLATION
+            spark_conf:
+              spark.databricks.cluster.profile: serverless
+              spark.databricks.delta.preview.enabled: "true"
+      tasks:
+        - task_key: auto_loader_afc_taps
+          job_cluster_key: small
+          notebook_task:
+            notebook_path: ../../notebooks/bronze/00_auto_loader_afc_taps
+            base_parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              storage_account: ${var.storage_account}
+          libraries:
+            - whl: ../dist/transit_lakehouse-0.1.0-py3-none-any.whl
+      schedule:
+        quartz_cron_expression: "0 */5 * * * ?"
+        timezone_id: America/Toronto
+      email_notifications:
+        on_failure: ["ArashM0z@users.noreply.github.com"]
+
+  pipelines:
+    silver_dlt:
+      name: silver_dlt
+      catalog: ${var.catalog}
+      target: ${var.silver_schema}
+      configuration:
+        bundle.target: ${bundle.target}
+      photon: true
+      libraries:
+        - notebook:
+            path: ../../notebooks/silver/01_dlt_pipeline
+      clusters:
+        - label: default
+          policy_id: ${var.cluster_policy_id}
+          autoscale:
+            min_workers: 1
+            max_workers: 3
+            mode: ENHANCED
+      continuous: false
+      development: true
