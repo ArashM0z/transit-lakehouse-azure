@@ -1,0 +1,18 @@
+# Default owner
+*           @ArashM0z
+
+# Infrastructure
+/terraform/ @ArashM0z
+/helm/      @ArashM0z
+/.github/   @ArashM0z
+
+# Data layer
+/dbt/       @ArashM0z
+/notebooks/ @ArashM0z
+
+# Application code
+/src/       @ArashM0z
+/tests/     @ArashM0z
+
+# Docs and contracts
+/docs/      @ArashM0z
