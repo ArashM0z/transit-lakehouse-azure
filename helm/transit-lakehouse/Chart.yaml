@@ -1,0 +1,21 @@
+apiVersion: v2
+name: transit-lakehouse
+description: |
+  AKS Helm chart for the transit-lakehouse forecast API service. Provisions a
+  deployment, service, HPA, PodDisruptionBudget, NetworkPolicy, and a
+  ServiceMonitor for Prometheus scraping.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"  # tracks the python package version
+home: https://github.com/ArashM0z/transit-lakehouse-azure
+maintainers:
+  - name: Arash Mozhdehi
+    email: ArashM0z@users.noreply.github.com
+keywords:
+  - transit
+  - lakehouse
+  - forecast-api
+  - azure
+  - aks
+
+# end of chart
