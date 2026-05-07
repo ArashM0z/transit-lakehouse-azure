@@ -1,0 +1,60 @@
+image:
+  repository: ghcr.io/arashm0z/transit-lakehouse-azure/app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts: []
+  annotations: {}
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+env:
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://otel-collector.observability:4317
+  - name: OTEL_SERVICE_NAME
+    value: transit-lakehouse-api
+
+networkPolicy:
+  enabled: true
+  ingressFromNamespaces:
+    - ingress-nginx
+  egress:
+    allowDns: true
+    allowToCidrs: []
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s

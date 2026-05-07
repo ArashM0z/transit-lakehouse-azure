@@ -1,0 +1,27 @@
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+ingress:
+  enabled: true
+  hosts:
+    - host: scoring-dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+env:
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=dev
+  LOG_LEVEL: DEBUG
+
+podDisruptionBudget:
+  enabled: false

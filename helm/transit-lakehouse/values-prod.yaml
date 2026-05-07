@@ -1,0 +1,39 @@
+replicaCount: 4
+
+autoscaling:
+  enabled: true
+  minReplicas: 4
+  maxReplicas: 30
+
+keda:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+ingress:
+  enabled: true
+  hosts:
+    - host: scoring.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: scoring-api-tls
+      hosts:
+        - scoring.example.com
+
+env:
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment=prod
+  LOG_LEVEL: INFO
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 50%
+
+priorityClassName: high-priority
