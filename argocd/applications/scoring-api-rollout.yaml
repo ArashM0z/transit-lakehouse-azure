@@ -1,0 +1,112 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: scoring-api
+  namespace: transit-lakehouse-prod
+  labels:
+    app: scoring-api
+spec:
+  replicas: 4
+  strategy:
+    canary:
+      canaryService: scoring-api-canary
+      stableService: scoring-api-stable
+      trafficRouting:
+        nginx:
+          stableIngress: scoring-api
+      steps:
+        - setWeight: 5
+        - pause: { duration: 2m }
+        - analysis:
+            templates:
+              - templateName: forecast-latency-p95
+              - templateName: forecast-error-rate
+            args:
+              - name: service-name
+                value: scoring-api-canary
+        - setWeight: 25
+        - pause: { duration: 5m }
+        - analysis:
+            templates:
+              - templateName: forecast-latency-p95
+              - templateName: forecast-error-rate
+        - setWeight: 50
+        - pause: { duration: 10m }
+        - setWeight: 100
+  selector:
+    matchLabels:
+      app: scoring-api
+  template:
+    metadata:
+      labels:
+        app: scoring-api
+    spec:
+      containers:
+        - name: scoring-api
+          image: ghcr.io/arashm0z/transit-lakehouse-azure/app:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: forecast-latency-p95
+  namespace: transit-lakehouse-prod
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: latency-p95
+      interval: 1m
+      successCondition: result[0] < 0.5
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc:9090
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(http_server_request_duration_seconds_bucket{
+                service="{{args.service-name}}", route="/v1/forecast"
+              }[2m])) by (le)
+            )
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: forecast-error-rate
+  namespace: transit-lakehouse-prod
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: error-rate
+      interval: 1m
+      successCondition: result[0] < 0.01
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc:9090
+          query: |
+            sum(rate(http_server_requests_total{
+              service="{{args.service-name}}", status=~"5.."
+            }[2m]))
+            /
+            sum(rate(http_server_requests_total{
+              service="{{args.service-name}}"
+            }[2m]))

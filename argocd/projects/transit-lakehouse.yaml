@@ -1,0 +1,80 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: transit-lakehouse
+  namespace: argocd
+  labels:
+    project: transit-lakehouse
+spec:
+  description: |
+    Project umbrella for the transit-lakehouse platform.
+    Hosts the scoring API, the natural-language data-assistant service, and the
+    Power BI gateway helper. All workloads run on the same AKS cluster in the
+    spoke VNet provisioned by Terraform.
+
+  sourceRepos:
+    - https://github.com/ArashM0z/transit-lakehouse-azure
+    - https://charts.bitnami.com/bitnami
+    - https://argoproj.github.io/argo-helm
+    - https://kubernetes.github.io/ingress-nginx
+    - https://kedacore.github.io/charts
+
+  destinations:
+    - namespace: transit-lakehouse-dev
+      server: https://kubernetes.default.svc
+    - namespace: transit-lakehouse-staging
+      server: https://kubernetes.default.svc
+    - namespace: transit-lakehouse-prod
+      server: https://kubernetes.default.svc
+    - namespace: ingress-nginx
+      server: https://kubernetes.default.svc
+    - namespace: keda
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: batch
+      kind: "*"
+    - group: networking.k8s.io
+      kind: "*"
+    - group: policy
+      kind: "*"
+    - group: autoscaling
+      kind: "*"
+    - group: keda.sh
+      kind: "*"
+    - group: argoproj.io
+      kind: Rollout
+
+  orphanedResources:
+    warn: true
+    ignore:
+      - kind: ConfigMap
+        name: kube-root-ca.crt
+
+  roles:
+    - name: read-only
+      description: Read-only access for the team
+      policies:
+        - p, proj:transit-lakehouse:read-only, applications, get, transit-lakehouse/*, allow
+      groups:
+        - transit-lakehouse-readers
+    - name: deploy
+      description: Sync and rollback permissions
+      policies:
+        - p, proj:transit-lakehouse:deploy, applications, *, transit-lakehouse/*, allow
+      groups:
+        - transit-lakehouse-deployers

@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scoring-api-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    project: transit-lakehouse
+    component: scoring-api
+    environment: prod
+spec:
+  project: transit-lakehouse
+  source:
+    repoURL: https://github.com/ArashM0z/transit-lakehouse-azure
+    targetRevision: main
+    path: helm/transit-lakehouse
+    helm:
+      releaseName: scoring-api
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: transit-lakehouse-prod
+  syncPolicy:
+    # Prod requires a human to click Sync after CI green.
+    automated: null
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+  revisionHistoryLimit: 20
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

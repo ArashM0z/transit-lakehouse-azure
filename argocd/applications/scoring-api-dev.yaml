@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scoring-api-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    project: transit-lakehouse
+    component: scoring-api
+    environment: dev
+spec:
+  project: transit-lakehouse
+  source:
+    repoURL: https://github.com/ArashM0z/transit-lakehouse-azure
+    targetRevision: main
+    path: helm/transit-lakehouse
+    helm:
+      releaseName: scoring-api
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: transit-lakehouse-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  ignoreDifferences:
+    # HPA replica counts are managed by KEDA, not Git.
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
