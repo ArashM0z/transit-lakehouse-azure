@@ -1,0 +1,22 @@
+{
+  "reports": [
+    {
+      "name": "Network overview",
+      "pbix": "network_overview.pbix",
+      "dataset": "transit_network",
+      "audience": "executive"
+    },
+    {
+      "name": "Event demand uplift",
+      "pbix": "event_demand_uplift.pbix",
+      "dataset": "transit_network",
+      "audience": "marketing"
+    },
+    {
+      "name": "Fare revenue forecast",
+      "pbix": "fare_revenue_forecast.pbix",
+      "dataset": "transit_network",
+      "audience": "finance"
+    }
+  ]
+}
