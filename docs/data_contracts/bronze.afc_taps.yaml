@@ -1,0 +1,70 @@
+version: "1.0.0"
+zone: bronze
+domain: afc
+dataset: afc_taps
+description: |
+  Raw fare-tap events from the AFC system, deliberately immutable. One row
+  per tap. Source of truth for downstream silver / gold transformations and
+  for audit replay.
+
+owner: arash.mozhdehi
+data_classification: internal
+pii_columns: []  # card_token is tokenised; no PII
+retention_days: 730
+freshness_sla_minutes: 5
+
+schema:
+  - name: tap_id
+    type: string
+    required: true
+    unique: true
+    description: Globally unique tap identifier (UUIDv4).
+  - name: card_token
+    type: string
+    required: true
+    description: Tokenised PRESTO card identifier; not PII.
+  - name: station_id
+    type: string
+    required: true
+    description: Source station.
+  - name: line
+    type: string
+    required: true
+    description: Operating line at tap time.
+  - name: zone
+    type: int
+    required: true
+    description: Fare zone number.
+  - name: fare_class
+    type: string
+    required: true
+    enum: [ADULT, SENIOR, YOUTH, CHILD, CONCESSION]
+  - name: fare_amount_cad
+    type: float
+    required: true
+    description: Fare charged in CAD; 0 for CHILD.
+  - name: tap_type
+    type: string
+    required: true
+    enum: [TAP_ON, TAP_OFF]
+  - name: tap_timestamp_utc
+    type: timestamp
+    required: true
+    timezone: UTC
+  - name: device_id
+    type: string
+    required: true
+  - name: schema_version
+    type: string
+    required: true
+    description: Producer schema version (semver).
+  - name: ingest_timestamp_utc
+    type: timestamp
+    required: true
+    description: When the bronze ingester wrote the row.
+
+contract_tests:
+  - tap_id is_unique
+  - fare_amount_cad >= 0
+  - tap_timestamp_utc not_null
+  - schema_version matches "v[0-9]+"

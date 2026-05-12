@@ -1,0 +1,30 @@
+version: "1.0.0"
+zone: gold
+domain: ridership
+dataset: fact_ridership_hourly
+description: |
+  Hourly station-level ridership fact. Grain: (station_id, tap_hour_utc).
+  Consumed by Power BI and the demand-forecasting model.
+
+owner: arash.mozhdehi
+data_classification: internal
+pii_columns: []
+freshness_sla_minutes: 60
+
+schema:
+  - { name: date_key,           type: int,       required: true, fk: dim_date.date_key }
+  - { name: tap_hour_utc,       type: timestamp, required: true }
+  - { name: station_id,         type: string,    required: true, fk: dim_station.station_id }
+  - { name: line_id,            type: string,    required: true }
+  - { name: zone,               type: int,       required: true }
+  - { name: tap_on_count,       type: int,       required: true, min: 0 }
+  - { name: tap_off_count,      type: int,       required: true, min: 0 }
+  - { name: total_taps,         type: int,       required: true, min: 0 }
+  - { name: unique_riders,      type: int,       required: true, min: 0 }
+  - { name: total_fare_cad,     type: float,     required: true, min: 0 }
+  - { name: taps_per_rider,     type: float,     required: false, min: 0 }
+
+contract_tests:
+  - composite_key (station_id, tap_hour_utc) is_unique
+  - total_taps = tap_on_count + tap_off_count
+  - unique_riders <= total_taps
