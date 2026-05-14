@@ -1,0 +1,88 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths:
+      - terraform/**
+      - .github/workflows/terraform.yml
+  push:
+    branches: [main]
+    paths:
+      - terraform/**
+      - .github/workflows/terraform.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+env:
+  TF_VERSION: "1.10.3"
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+
+  fmt:
+    name: terraform fmt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - run: terraform -chdir=terraform fmt -recursive -check
+
+  validate:
+    name: terraform validate (${{ matrix.env }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Init (no backend)
+        working-directory: terraform/environments/${{ matrix.env }}
+        run: terraform init -backend=false
+      - name: Validate
+        working-directory: terraform/environments/${{ matrix.env }}
+        run: terraform validate
+
+  security:
+    name: terraform security (tfsec + checkov)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: true
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          quiet: true
+          soft_fail: true
+          skip_check: CKV_AZURE_999
+
+  plan:
+    name: terraform plan (dev)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    needs: [fmt, validate, security]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: Init (no backend in CI)
+        working-directory: terraform/environments/dev
+        run: terraform init -backend=false
+      - name: Plan
+        working-directory: terraform/environments/dev
+        run: terraform plan -no-color -input=false -lock=false || true
+        continue-on-error: true

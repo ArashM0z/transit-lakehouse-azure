@@ -1,0 +1,191 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  lint:
+    name: Lint and format check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.10"
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.12
+
+      - name: Install deps
+        run: uv sync --extra dev
+
+      - name: Ruff (lint)
+        run: uv run ruff check src tests
+
+      - name: Ruff (format)
+        run: uv run ruff format --check src tests
+
+      - name: Mypy strict
+        run: uv run mypy --strict src
+
+      - name: SQLFluff (dbt models)
+        run: uv run sqlfluff lint dbt/models --disable-progress-bar || true  # advisory until dbt project is fully wired
+
+      - name: Hadolint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+      - name: YAMLLint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yml
+
+      - name: Markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: |
+            **/*.md
+            !node_modules
+
+      - name: Actionlint
+        uses: raven-actions/actionlint@v2
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.10"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --extra dev
+      - name: Run pytest unit
+        run: uv run pytest tests/unit -q --cov=src --cov-report=xml --cov-report=term-missing
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+        if: ${{ env.CODECOV_TOKEN != '' }}
+
+  integration-tests:
+    name: Integration tests (docker-compose)
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Bring up stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build postgres minio redpanda
+          ./scripts/wait-for-healthy.sh postgres minio redpanda
+      - name: Run pytest integration
+        run: docker compose run --rm app uv run pytest tests/integration -q
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  build-image:
+    name: Build and sign container image
+    runs-on: ubuntu-24.04
+    needs: [unit-tests, integration-tests]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/app
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: prod
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+      - name: Install cosign
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: sigstore/cosign-installer@v3
+      - name: Sign image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
+            cosign sign --yes "${tag}@${DIGEST}"
+          done
+
+  dbt-build:
+    name: dbt build (DuckDB)
+    runs-on: ubuntu-24.04
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.10"
+      - run: uv python install 3.12
+      - run: uv sync --extra dev
+      - name: dbt deps
+        run: uv run dbt deps --project-dir dbt --profiles-dir dbt/profiles || true
+      - name: dbt build (CI profile - DuckDB)
+        env:
+          DBT_PROFILES_DIR: dbt/profiles
+        run: uv run dbt build --project-dir dbt --target ci || true  # advisory until dbt project is fully wired
+
+  all-green:
+    name: All green
+    runs-on: ubuntu-24.04
+    needs: [lint, unit-tests, integration-tests, build-image, dbt-build]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" \
+             || "${{ needs.unit-tests.result }}" != "success" \
+             || "${{ needs.integration-tests.result }}" != "success" \
+             || "${{ needs.build-image.result }}" != "success" \
+             || "${{ needs.dbt-build.result }}" != "success" ]]; then
+            echo "One or more jobs failed"; exit 1
+          fi
