@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: silver
+    database: lakehouse
+    schema: silver
+    freshness:
+      warn_after: { count: 30, period: minute }
+      error_after: { count: 2,  period: hour }
+    loaded_at_field: _silver_loaded_at
+    tables:
+      - name: silver__afc_taps
+        description: Cleansed and conformed AFC tap events.
+      - name: silver__gtfs_realtime_vehicles
+        description: Cleansed GTFS-Realtime VehiclePositions.
+        freshness:
+          warn_after: { count: 5,  period: minute }
+          error_after: { count: 15, period: minute }
